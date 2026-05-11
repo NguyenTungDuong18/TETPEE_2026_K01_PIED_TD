@@ -1,4 +1,6 @@
-﻿namespace TetPee.Service.Order;
+﻿using MimeKit.Encodings;
+
+namespace TetPee.Service.Order;
 
 public class Response
 {
@@ -9,7 +11,6 @@ public class Response
         public required string BankName { get; set; }
         public required string BankAccount { get; set; }
         public required string Description { get; set; }
-        public required string QRcode { get; set; }
+        public required string QRCode { get; set; }
     }
-
 }

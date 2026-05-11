@@ -2,5 +2,5 @@
 
 public interface IService
 {
-    public Task<Response.IdenetityResponse> Login(String email, String password);
+    public Task<Response.IdentityResponse> Login(string email, string password);
 }

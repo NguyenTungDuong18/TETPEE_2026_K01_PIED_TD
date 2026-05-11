@@ -2,10 +2,11 @@
 
 public class Request
 {
-    public class CreateSellerRequest : Identity.Request.CreateUserRequest
+    public class CreateSellerRequest:Identity.Request.CreateSellerRequest
     {
-        public required string CompanyName { get; set; }
-        public required string CompanyAddress { get; set; }
-        public required string TaxCode { get; set; }
+        
+        public string taxCode { get; set; }
+        public string CompanyName { get; set; }
+        public string CompanyAddress { get; set; }
     }
 }

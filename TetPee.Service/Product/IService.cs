@@ -2,5 +2,5 @@
 
 public interface IService
 {
-    Task<string>CreateProduct(Request.CreateProductRequest request);
+    public Task<string> createProduct(Request.CreateProductRequest request);
 }

@@ -1,6 +1,4 @@
-﻿using System.Net.Mail;
-
-namespace TetPee.Service.MailService;
+﻿namespace TetPee.Service.MailService;
 
 public interface IService
 {
@@ -9,7 +7,7 @@ public interface IService
 
 public class MailContent
 {
-    public required string To { get; set; } //Địa chỉ gửi đến
-    public required string Subject { get; set; } //Chủ đề (tiêu đê email)
-    public required string Body { get; set; } //Nội dung (hỗ trợ HTML) của email
+    public required string To { get; set; } //địa chỉ gửi đến
+    public required string Subject { get; set; } // chủ đề (tiêu đề mail)
+    public required string Body { get; set; } //Nội dung (hỗ trợ HTML ) của email
 }

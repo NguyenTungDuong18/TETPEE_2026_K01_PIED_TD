@@ -2,8 +2,8 @@
 
 public class Response
 {
-    public class IdenetityResponse
+    public class IdentityResponse
     {
-        public string? AccessToken { get; set; } = null;
+        public string AccessToken { get; set; } = null;
     }
 }

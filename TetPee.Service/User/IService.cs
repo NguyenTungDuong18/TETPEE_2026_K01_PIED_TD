@@ -2,14 +2,12 @@
 
 public interface IService
 {
-    public Task<Base.Response.PageResult<Response.GetUserResponse>> GetUsers(
+    public Task<Base.Response.PageResult<Response.GetUsersResponse>> GetUsers(
         string? searchTerm,
-        int pageSize,
-        int pageIndex);
+        int pageIndex,
+        int pageSize);
+
+    public Task<Response.GetUsersResponse?> GetUsersByid(Guid id );
     
-    public Task<Response.GetUserResponse?> GetUserById(Guid id);
-    
-    public Task<bool>UpdateUser(Guid id, Request.UpdateUserRequest request);
-    public Task<bool>DeleleUser(Guid id);
-    public Task<string>CreateUser(Request.CreateUserRequest request);
+    // public Task<Base.Response.PageResult<Response.GetAllSellersResponse>> GetAllSeller(String? searchTerm);
 }

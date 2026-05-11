@@ -2,13 +2,12 @@
 
 public interface IService
 {
-    public Task<Base.Response.PageResult<Response.GetSellerResponse>> GetSellers(
+    public Task<Base.Response.PageResult<Response.GetSellerResponse>> GetSeller(
         string? searchTerm,
-        int pageSize,
-        int pageIndex);
+        int pageIndex,
+        int pageSize);
 
-    public Task<Response.GetSellerByIdResponse?> GetSellerById(Guid id);
+    public Task<Response.GetSellerByIdResponse?> GetSellerByid(Guid id);
 
     public Task<string> CreateSeller(Request.CreateSellerRequest request);
-
 }
