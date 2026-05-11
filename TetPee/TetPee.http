@@ -1,0 +1,6 @@
+@TetPee_HostAddress = http://localhost:5151
+
+GET {{TetPee_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

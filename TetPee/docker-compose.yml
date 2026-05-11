@@ -1,0 +1,18 @@
+﻿version: '3.8'
+
+services:
+  tetpee-db:
+    image: postgres:latest
+    container_name: tetpee_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: MyStrongPassword123@
+      POSTGRES_DB: tetpee_v2
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pgdata:

@@ -1,0 +1,2709 @@
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\appsettings.json
+================================================
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=tetpee_v2;Username=postgres;Password=MyStrongPassword123@"
+  },
+  "JwtOptions": {
+    "SecretKey": "IRanUIwukUBzSauFsZnr7AjV7XS96keke",
+    "Issuer": "kakastartupprojectkeke",
+    "Audience": "kakastartupprojectkeke",
+    "ExpireMinutes": 120
+  },
+  "CloudinaryOptions" : {
+    "CloudName": "dliizbdvb",
+    "ApiKey": "634935773511427",
+    "ApiSecret": "ijN2HTIFYdBG4e3mqrAk3FQyu2U"
+  },
+  "MailOptions": {
+    "Mail": "tuanle17082k5@gmail.com",
+    "DisplayName": "TetPee",
+    "Password": "cbdsdmpkpqfzigot",
+    "Host": "smtp.gmail.com",
+    "Port": 587
+  }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Program.cs
+================================================
+
+using Microsoft.EntityFrameworkCore;
+using TetPee.Api.Extensions;
+using TetPee.Middlewares;
+using TetPee.Repository.Data;
+
+using UserSrivice = TetPee.Service.User;
+using CategorySrivice = TetPee.Service.Category;
+using SellerSrivice = TetPee.Service.Seller;
+using IdentitySrivice = TetPee.Service.Identity;
+using JwtSrivice = TetPee.Service.JwtService;
+using ProductSrivice = TetPee.Service.Product;
+using MediaService = TetPee.Service.MediaService;
+using CloudinaryService = TetPee.Service.CloudinaryService;
+using MailService = TetPee.Service.MailService;
+using CartService = TetPee.Service.Cart;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+        )
+    );
+
+builder.Services.AddJwtServices(builder.Configuration);
+builder.Services.AddSwaggerServices();
+ builder.Services.AddScoped<UserSrivice.IService, UserSrivice.Service>();
+ builder.Services.AddScoped<CategorySrivice.IService, CategorySrivice.Service>();
+ builder.Services.AddScoped<SellerSrivice.IService, SellerSrivice.Service>();
+ builder.Services.AddScoped<JwtSrivice.IJwtService, JwtSrivice.JwtServices>();
+builder.Services.AddScoped<IdentitySrivice.IService, IdentitySrivice.Service>();
+builder.Services.AddScoped<ProductSrivice.IService, ProductSrivice.Service>();
+builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<MailService.IService, MailService.Service>();
+builder.Services.AddScoped<CartService.IService, CartService.Service>();
+
+
+builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseAuthentication();//BaÃ£n coÃÅ ƒë∆∞∆°Ã£c vaÃÄo h·ªá th·ªëng hay kh
+app.UseAuthorization();//B·∫°n l√† ai trong h·ªá th·ªëng
+//N·∫øu kh c√≥ Autho th√¨ m·∫•y c√°i policy ph√¢n quy·ªÅn trong controller s·∫Ω kh c√≥ t√°c d·ª•ng
+
+app.MapControllers();
+
+app.Run();
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\TetPee.csproj
+================================================
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MailKit" Version="4.15.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\TetPee.Repository\TetPee.Repository.csproj" />
+      <ProjectReference Include="..\TetPee.Service\TetPee.Service.csproj" />
+    </ItemGroup>
+
+</Project>
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\WeatherForecast.cs
+================================================
+
+namespace TetPee;
+
+public class WeatherForecast
+{
+    public DateOnly Date { get; set; }
+
+    public int TemperatureC { get; set; }
+
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+    public string? Summary { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\CartController.cs
+================================================
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TetPee.Service.Cart;
+using TetPee.Service.Model;
+
+namespace TetPee.Controllers;
+
+[Authorize]
+[ApiController]
+[Route("[controller]")]
+public class CartController: ControllerBase
+{
+    private readonly IService _cartService;
+
+    public CartController(IService cartService)
+    {
+        _cartService = cartService;
+    }
+    
+    [HttpPost(template: "")]
+    public async Task<IActionResult> CreateCart()
+    {
+         await _cartService.CreateCart();
+        return Ok(ApiResponseFactory.SuccessResponse(null, "Cart retrieved", HttpContext.TraceIdentifier));
+    }
+    
+    [HttpPost(template: "product")]
+    public async Task<IActionResult> AddProductToCart(Request.AddProductToCartRequest request)
+    {
+        await _cartService.AddProductToCart(request);
+        return Ok(ApiResponseFactory.SuccessResponse( "Add Cart retrieved", HttpContext.TraceIdentifier));
+    }
+    
+    [HttpDelete(template: "product")]
+    public async Task<IActionResult> DeleteProductToCart(Request.RemoveProductFromCartRequest request)
+    {
+        await _cartService.RemoveProductFromCart(request);
+        return Ok(ApiResponseFactory.SuccessResponse( "Remove Cart retrieved", HttpContext.TraceIdentifier));
+    }
+    
+    [HttpGet(template: "product")]
+    public async Task<IActionResult> GetCart()
+    {
+        var result = await _cartService.GetCart();
+        return Ok(ApiResponseFactory.SuccessResponse( result,"Get Cart retrieved", HttpContext.TraceIdentifier));
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\CategoryController.cs
+================================================
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TetPee.Repository.Data;
+using TetPee.Service.Category;
+using TetPee.Service.Model;
+
+
+namespace TetPee.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class CategoryController: ControllerBase
+{
+    private readonly IService _categoryService;
+    
+    public CategoryController(IService categoryService)
+    {
+        _categoryService = categoryService;
+    }
+
+    [Authorize]
+    [HttpGet(template: "")]
+    public async Task<IActionResult> GetCategory()
+    {
+        var result = await _categoryService.GetCategory();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Categories retrieved", HttpContext.TraceIdentifier));
+    }
+    
+    [HttpGet(template: "{parentId}/childrens")]
+    public async Task<IActionResult> GetCategory(Guid parentId)
+    {
+        var result = await _categoryService.GetChildrenByCategory(parentId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Child Categories retrieved", HttpContext.TraceIdentifier));
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\IdentityController.cs
+================================================
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TetPee.Service.Identity;
+
+namespace TetPee.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class IdentityController: ControllerBase
+{
+    private readonly IService _identityService;
+
+    public IdentityController(IService identityService)
+    {
+        _identityService = identityService;
+    }
+    
+    [HttpGet(template: "login")]
+    public async Task<IActionResult> Login(string email, string password)
+    {
+        var users = await _identityService.Login(email, password);
+        return Ok(users);
+    }
+
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\ProductController.cs
+================================================
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TetPee.Api.Extensions;
+using TetPee.Service.Product;
+
+namespace TetPee.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class ProductController: ControllerBase
+{
+    private readonly IService _productService;
+    public ProductController(IService productService)
+    {
+        _productService = productService;
+    }
+    [Authorize(Policy = JwtExtensions.SellerOrUserPolicy)]
+    [HttpPost("")]
+    public async Task<IActionResult> CreateProduct(Request.CreateProductRequest request)
+    {
+        var result = await _productService.CreateProduct(request);
+        return Ok(result);
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\SellerController.cs
+================================================
+
+using Microsoft.AspNetCore.Mvc;
+using TetPee.Service.Seller;
+
+namespace TetPee.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class SellerController: ControllerBase
+{
+        private readonly IService _sellerService;
+
+        public SellerController(IService sellerService)
+        {
+            _sellerService = sellerService;
+        }
+    
+        [HttpGet(template: "")]
+        public async Task<IActionResult> GetSeller(string? searchTerm,int pageSize = 10, int pageIndex = 1)
+        {
+            var result = await _sellerService.GetSellers(searchTerm, pageSize, pageIndex);
+            return Ok(result);
+        }
+    
+        [HttpGet(template: "{id}")]
+        public async Task<IActionResult> GetSellerById(Guid id)
+        {
+            var result = await _sellerService.GetSellerById(id);
+            return Ok(result);
+        }
+        
+        [HttpPost("")]
+        public async Task<IActionResult> CreateSeller(Request.CreateSellerRequest request)
+        {
+            var result = await _sellerService.CreateSeller(request);
+            return Ok(result);
+        }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\UserController.cs
+================================================
+
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using TetPee.Repository.Data;
+using TetPee.Repository.Entity;
+using TetPee.Service.User;
+
+namespace TetPee.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class UserController:  ControllerBase
+{
+    private readonly AppDbContext _dbContext;
+    private readonly IService _userService;
+    private readonly Service.MediaService.IService _mediaService;
+    
+    public UserController(AppDbContext dbContext,  IService userService, Service.MediaService.IService mediaService )
+    {
+        _dbContext = dbContext;
+        _userService = userService;
+        _mediaService = mediaService;
+    }
+
+    [HttpGet(template: "")]
+    public async Task<IActionResult> GetUser(string? searchTerm, int pageSize = 10, int pageIndex = 1)
+    {
+        var users = await _userService.GetUsers(searchTerm, pageSize, pageIndex);
+        return Ok(users);
+    }
+    
+    [HttpGet(template: "{id}")]
+    public async Task<IActionResult> GetUserById(Guid id)
+    {
+        var user = await _userService.GetUserById(id);
+        return Ok(user);
+    }
+    
+    [HttpPut(template: "{id}")]
+    public async Task<IActionResult> UpdateUsers(Guid id, [FromBody] Request.UpdateUserRequest request)
+    {
+        var isSuccess = await _userService.UpdateUser(id, request);
+        if (!isSuccess)
+        {
+            return NotFound("KhÙng tÏm th?y ngu?i d? c?p nh?t.");
+        }
+        return Ok("C?p nh?t ngu?i d˘ng th‡nh cÙng.");
+    }
+    
+    [HttpDelete(template: "{id}")]
+    public async Task<IActionResult> DeleteUsers(Guid id)
+    {
+        var isSuccess = await _userService.DeleleUser(id);
+        if (!isSuccess)
+        {
+            return NotFound("KhÙng tÏm th?y ngu?i d? xÛa.");
+        }
+        return Ok("XÛa ngu?i d˘ng th‡nh cÙng");
+    }
+    
+    [HttpPost(template: "")]
+    public async Task<IActionResult> CreateUser([FromForm]  Request.CreateUserRequest request, CancellationToken cancellationToken)
+    {
+        var user = new User()
+        {
+            Email = request.Email,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            HashedPassword = request.Password,
+        };
+        if (request.Avatar != null)
+        {
+            var media = await _mediaService.UploadImageAsync(request.Avatar);
+            user.ImageUrl = media;
+        }
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        return Ok("Create user successfully");
+    }
+    
+    
+    
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Controllers\WeatherForecastController.cs
+================================================
+
+using Microsoft.AspNetCore.Mvc;
+
+namespace TetPee.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class WeatherForecastController : ControllerBase
+{
+    private static readonly string[] Summaries = new[]
+    {
+        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    };
+
+    private readonly ILogger<WeatherForecastController> _logger;
+
+    public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    {
+        _logger = logger;
+    }
+
+    [HttpGet(Name = "GetWeatherForecast")]
+    public IEnumerable<WeatherForecast> Get()
+    {
+        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            {
+                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                TemperatureC = Random.Shared.Next(-20, 55),
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+            })
+            .ToArray();
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Extensions\JwtExtensions.cs
+================================================
+
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using TetPee.Service.JwtService;
+
+namespace TetPee.Api.Extensions;
+
+public static class JwtExtensions
+{
+    public const string AdminPolicy = "AdminPolicy";
+    public const string SellerPolicy = "SellerPolicy";
+    public const string UserPolicy = "UserPolicy";
+    public const string SellerOrAdminPolicy = "SellerOrAdminPolicy";
+    public const string SellerOrUserPolicy = "SellerOrUserPolicy";
+
+    public static void AddJwtServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        JwtOptions jwtOption = new JwtOptions();
+        configuration.GetSection(nameof(JwtOptions)).Bind(jwtOption);
+        var key = Encoding.UTF8.GetBytes(jwtOption.SecretKey);
+
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtOption.Issuer,
+                    ValidAudience = jwtOption.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    NameClaimType = ClaimTypes.NameIdentifier,
+                    RoleClaimType = ClaimTypes.Role
+                };
+            });
+
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AdminPolicy, policy =>
+                policy.RequireRole("Admin"));
+            // [Authorize(Policy = JwtExtensions.AdminPolicy)]
+
+            options.AddPolicy(SellerPolicy, policy =>
+                policy.RequireRole("Seller"));
+            // [Authorize(Policy = JwtExtensions.SellerPolicy)]
+
+            options.AddPolicy(UserPolicy, policy =>
+                policy.RequireRole("User"));
+
+            options.AddPolicy(SellerOrUserPolicy, policy =>
+                policy.RequireRole("Seller", "User"));
+            
+            options.AddPolicy(SellerOrAdminPolicy, policy =>
+                policy.RequireRole("Seller", "Admin"));
+
+            // [Authorize(Policy = JwtExtensions.SellerOrAdminPolicy)]
+        });
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Extensions\SwaggerExtensions.cs
+================================================
+
+
+
+
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerUI;
+
+public static class SwaggerExtensions
+{
+    public static void AddSwaggerServices(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo() { Title = "TetPee APIs", Version = "v1" });
+            // options
+
+            // Define the security scheme for JWT Bearer
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter 'Bearer' [space] and then your token in the text input below.\nExample: 'Bearer eyJhbGciOiJIUzI1NiIsInR...' "
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    new string[] {}
+                }
+            });
+        });
+    }
+    
+    public static void UseSwaggerAPI(this WebApplication app)
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            // foreach (var version in app.DescribeApiVersions().Select(version => version.GroupName))
+            //     options.SwaggerEndpoint($"/swagger/{version}/swagger.json", version);
+
+            options.DisplayRequestDuration();   
+            options.EnableTryItOutByDefault();
+            options.DocExpansion(DocExpansion.List);
+        });
+
+        app.MapGet("/", () => Results.Redirect("/swagger/index.html"))
+            .WithTags(string.Empty);
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee\Middlewares\GlobalExceptionHandlerMiddleware.cs
+================================================
+
+using TetPee.Service.Model;
+
+namespace TetPee.Middlewares;
+
+public class GlobalExceptionHandlerMiddleware : IMiddleware
+{
+    private readonly IHostEnvironment _environment;// phiÍn ba?n dev: tra? lÙ~i chi tiÍ¥t hon, hay production: tra? lÙ~i nga¥n dÍ? do?c ca¥c log kha¥c
+    private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
+
+    public GlobalExceptionHandlerMiddleware(
+        IHostEnvironment environment,
+        ILogger<GlobalExceptionHandlerMiddleware> logger)
+    {
+        _environment = environment;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        try
+        {
+            await next(context);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception occurred while processing request {Path}", context.Request.Path);
+
+            if (context.Response.HasStarted)
+            {
+                _logger.LogWarning("The response has already started, the global exception middleware will not write an error response");
+                throw;
+            }
+
+            var statusCode = MapStatusCode(ex);
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json";
+
+            var response = ApiResponseFactory.ErrorResponse(
+                message: ResolveClientMessage(ex, statusCode),
+                errors: _environment.IsDevelopment() ? new { detail = ex.Message } : null,
+                traceId: context.TraceIdentifier);
+
+            await context.Response.WriteAsJsonAsync(response);
+        }
+    }
+
+    private static int MapStatusCode(Exception ex)
+    {
+        return ex switch
+        {
+            ArgumentException => StatusCodes.Status400BadRequest,
+            InvalidOperationException => StatusCodes.Status400BadRequest,
+            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+            KeyNotFoundException => StatusCodes.Status404NotFound,
+            _ => StatusCodes.Status500InternalServerError
+        };
+    }
+
+    private static string ResolveClientMessage(Exception ex, int statusCode)
+    {
+        return statusCode >= 500 ? "An unexpected error occurred" : ex.Message;
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\TetPee.Repository.csproj
+================================================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MailKit" Version="4.15.1" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.2" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.2" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+    </ItemGroup>
+
+</Project>
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Abtraction\BaseEntity.cs
+================================================
+
+namespace TetPee.Repository.Abtraction;
+
+public abstract class BaseEntity<T>
+{
+    public T Id { get; set; }
+    // Soft Delete: thay vÏ xÛa d? li?u database thÏ mÏnh thay d?i tr?ng th·i n‡y
+    // Gi˙p tr·nh xung d?t khÛa ngo?i (Foreign Key Constraint)
+    public bool IsDeleted { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Abtraction\IAuditableEntity.cs
+================================================
+
+namespace TetPee.Repository.Abtraction;
+
+public interface IAuditableEntity
+{
+    DateTimeOffset CreateAt { get; set; }
+    DateTimeOffset? UpdateAt { get; set; }
+}   
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Data\AppDbContext.cs
+================================================
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using TetPee.Repository.Entity;
+
+namespace TetPee.Repository.Data;
+
+public class AppDbContext : DbContext
+{
+    public static Guid UserId1 = Guid.NewGuid();
+    public static Guid UserId2 = Guid.NewGuid();
+    
+    public static Guid SellerId1 = Guid.NewGuid();
+    
+    public static Guid CategoryParent1 = Guid.NewGuid();
+    public static Guid CategoryParent2 = Guid.NewGuid();
+    
+    
+    public static Guid ProductId1 = Guid.NewGuid();
+    public static Guid ProductId2 = Guid.NewGuid();
+    public static Guid ProductId3 = Guid.NewGuid();
+    public static Guid ProductId4 = Guid.NewGuid();
+    
+    public static Guid OrderId1 = Guid.NewGuid();
+    public static Guid OrderId2 = Guid.NewGuid();
+    
+    
+    
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+
+    // Khai b·o c·c b?ng s? du?c t?o trong Database
+    public DbSet<User> Users { get; set; }
+    public DbSet<Seller> Sellers { get; set; }
+    public DbSet<Product> Products { get; set; }
+    public DbSet<ProductStorage> ProductStorages { get; set; }
+    public DbSet<Storage> Storages { get; set; }
+    public DbSet<Cart> Carts { get; set; }
+    public DbSet<Inventory> Inventories { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderDetail> OrderDetails { get; set; }
+    public DbSet<ProductCategory> ProductCategories { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<CartDetail> CartDetails { get; set; }
+    
+    //H‡m n‡y cho phÈp l‡m nhi?u th? vs nh?ng table du?i DB
+    //vd 1/setup nh?ng c· role cho nh?ng c·i field: email, firstname, lastname...
+    // 2/ setup nh?ng c·i role chho nh?ng m?i quan h? 1-N, N-N
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        //=========================== User Configration =====================
+        modelBuilder.Entity<User>(builder =>
+        {
+            builder.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.HasIndex(u => u.Email)
+                .IsUnique();
+
+            builder.Property(u => u.FirstName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(u => u.LastName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(u => u.ImageUrl)
+                .HasMaxLength(500);
+
+            builder.Property(u => u.PhoneNumber)
+                .HasMaxLength(20);
+
+            builder.Property(u => u.HashedPassword)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            builder.Property(u => u.Role)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("User");
+
+            //Relationshio: User has on Seller (one-to-one)
+            builder.HasOne(u => u.Seller)
+                .WithOne(s => s.User)
+                .HasForeignKey<Seller>(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+                builder.HasOne(u => u.Cart)
+                    .WithOne(s => s.User)
+                    .HasForeignKey<Cart>(s => s.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            //DeleleBehavior.Cascode: khi m?t User b? xÛa, thÏ Seller liÍn quan cung s? b? xÛa theo
+            //DeleteBehavior.Retrict: Ngan ch?n vi?c xÛa m?t User n?u cÛ Seller liÍn quan t?n t?i
+            //(tham chi?u t?i PK t?n t?i)
+            // 1 Project cÚn Task thÏ khÙng xÛa du?c
+            //DeleteBehavior.NoAction: KhÙng th?c hi?n h‡nh d?ng gÏ d?c bi?t khi User b? xÛa. (G?n gi?ng Restrict, x? lÌ ? DB)
+            //DeleteBehavior.SetNull: Khi m?t User b? xÛa, thÏ mÙi tru?ng UserId trong b?ng Seller s? du?c d?t th‡nh null
+            //(¡p d?ng khi tru?ng FK cho phÈp null)
+
+            List<User> users = new List<User>()
+            {
+                new User()
+                {
+                    Id = UserId1,
+                    Email = "tuanle17062k5@gmail.com",
+                    FirstName = "Tuan",
+                    LastName = "Le",
+                    HashedPassword = "hashed_password_1",
+                },
+                
+                new User()
+                {
+                    Id = UserId2,
+                    Email = "tuanle17062k6@gmail.com",
+                    FirstName = "Tuan",
+                    LastName = "Le",
+                    HashedPassword = "hashed_password_1",
+                }
+            };
+
+            for (int i = 0; i < 1000; i++)
+            {
+                var newUser = new User()
+                {
+                    Id = Guid.NewGuid(),
+                    Email = "tuan" + i + "@gmail.com",
+                    FirstName = "Tuan",
+                    LastName = "Le",
+                    HashedPassword = "hashed_password_1" + i,
+                };
+                users.Add(newUser);
+            }
+            builder.HasData(users);
+        });
+
+        modelBuilder.Entity<Seller>(builder =>
+        {
+            builder.Property(s=>s.TaxCode)
+                .IsRequired()
+                .HasMaxLength(50);
+            builder.Property(s=> s.CompanyName)
+                .IsRequired()
+                .HasMaxLength(200);
+            builder.Property(s=> s.CompanyAddress)
+                .IsRequired()
+                .HasMaxLength(500);
+            var seller = new List<Seller>()
+            {
+                new()
+                {
+                    Id = SellerId1,
+                    TaxCode = "TAXCODE123",
+                    CompanyName = "ABC Company",
+                    CompanyAddress = "123 Main St, Cityville",
+                    UserId = UserId1
+                }
+            };
+            builder.HasData(seller);
+        });
+
+        modelBuilder.Entity<Category>(builder =>
+        {
+            var categories = new List<Category>()
+            {
+                new()
+                {
+                    Id = CategoryParent1,
+                    Name = "¡o"
+                },
+                new()
+                {
+                    Id = CategoryParent2,
+                    Name = "Qu?n"
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "¡o th? thao",
+                    ParentId = CategoryParent1
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "¡o ba l?",
+                    ParentId = CategoryParent1,
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Qu?n Jean",
+                    ParentId = CategoryParent2,
+                }
+            };
+            builder.HasData(categories);
+        });
+        modelBuilder.Entity<Product>(builder =>
+        {
+            builder.Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(p => p.Description)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            builder.Property(p => p.UrlImage)
+                .HasMaxLength(500);
+
+            builder.Property(p => p.Price)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)");
+            var products = new List<Product>()
+            {
+                new Product()
+                {
+                    Id = ProductId1,
+                    Name = "¡o Thun Nam",
+                    Description =
+                        "¡o thun nam ch?t li?u cotton c?p cao, tho·ng m·t, ph˘ h?p cho m?i ho?t d?ng h?ng ng‡y.",
+                    UrlImage = "https://example.com/images/ao_thun_nam.jpg",
+                    Price = 199000m,
+                    SellerId = SellerId1
+                },
+                new Product()
+                {
+                    Id = ProductId2,
+                    Name = "Qu?n Jeans N?",
+                    Description =
+                        "Qu?n jeans n?a d·ng Ùm, tÙn d·ng, ch?t li?u denim co d„n, ph˘ h?p cho m?i d?p.",
+                    UrlImage = "https://example.com/images/quan_jeans_nu.jpg",
+                    Price = 399000m,
+                    SellerId = SellerId1
+                },
+
+                new Product()
+                {
+                    Id = ProductId3,
+                    Name = "¡o So Mi Nam",
+                    Description =
+                        "¡o so mi nam cÙng s?, thi?t k? hi?n d?i, ch?t li?u v?i cao c?p, tho·ng m·t.",
+                    UrlImage = "https://example.com/images/ao_so_mi_nam.jpg",
+                    Price = 299000m,
+                    SellerId = SellerId1
+                },
+                new Product()
+                {
+                    Id = ProductId4,
+                    Name = "Ch‚n V·y N?",
+                    Description =
+                        "Ch‚n v·y n? xÚe, thi?t k? tr? trung, ch?t li?u v?i m?m m?i, ph˘ h?p cho m?i d?p.",
+                    UrlImage = "https://example.com/images/chan_vay_nu.jpg",
+                    Price = 249000m,
+                    SellerId = SellerId1
+                }
+            };
+            builder.HasData(products);
+        });
+
+        modelBuilder.Entity<Order>(builder =>
+        {
+            var orders = new List<Order>()
+            {
+                new Order()
+                {
+                    Id = OrderId1,
+                    UserId = UserId2,
+                    Address = "Bien Hoa, Dong Nai",
+                    TotalAmount = 100000m,
+                    Status = "Completed"
+                },
+                new Order()
+                {
+                    Id = OrderId2,
+                    UserId = UserId2,
+                    Address = "Bien Hoa, Dong Nai",
+                    TotalAmount = 100000m,
+                    Status = "Completed"
+                }
+            };
+            builder.HasData(orders);
+        });
+        
+        modelBuilder.Entity<OrderDetail>(builder =>
+        {
+            var orderDetails = new List<OrderDetail>()
+            {
+                new OrderDetail()
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = OrderId1,
+                    ProductId = ProductId1,
+                    Quantity = 2,
+                    UnitPrice = 199000m
+                },
+                new OrderDetail()
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = OrderId1,
+                    ProductId = ProductId2,
+                    Quantity = 2,
+                    UnitPrice = 399000m
+                },
+                new OrderDetail()
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = OrderId2,
+                    ProductId = ProductId3,
+                    Quantity = 2,
+                    UnitPrice = 299000m
+                }
+            };
+            builder.HasData(orderDetails);
+        });
+        modelBuilder.Entity<Product>()
+            .HasOne(p=>p.Inventory)
+            .WithOne(i=>i.Product)
+            .HasForeignKey<Inventory>(i => i.ProGuidId);
+        
+        modelBuilder.Entity<Cart>(builder =>
+        {
+            builder.HasKey(c => c.Id); // –?nh nghia UserId l‡ Primary Key
+        });
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Cart.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Cart: BaseEntity<Guid>
+{
+   public Guid UserId { get; set; }
+   public User User { get; set; }
+    
+   public ICollection<CartDetail> CartDetails { get; set; } = new List<CartDetail>();
+    public DateTimeOffset CreatedAt { get; set; } // DÚng d? li?u n‡y du?c t?o ra khi n‡o
+    public DateTimeOffset? UpdatedAt { get; set; } // DÚng d? li?u n‡y du?c c?p nh?t l?n cu?i khi n‡o
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\CartDetail.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class CartDetail: BaseEntity<Guid>, IAuditableEntity
+{
+    public Guid CartId { get; set; }
+    public Cart Cart { get; set; }
+    
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public int Quantity { get; set; }
+
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Category.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Category: BaseEntity<Guid>, IAuditableEntity
+{
+    public required string Name { get; set; }
+    
+    public Guid? ParentId { get; set; } 
+    public Category? Parent { get; set; }
+    // N?u m‡ l‡ null, thÏ nÛ l‡ th?ng cha cao nh?t
+    // N?u m‡ cÛ gi· tr?, thÏ nÛ l‡ th?ng con c?a ParentId
+    
+    public ICollection<Category> Children { get; set; } = new List<Category>();
+    public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+    
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Inventory.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Inventory: BaseEntity<Guid>, IAuditableEntity
+{
+    public int TotalSell { get; set; }
+    public int TotalInStock { get; set; }
+    
+    public Guid ProGuidId { get; set; }
+    public Product Product { get; set; }
+    
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Order.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Order: BaseEntity<Guid>, IAuditableEntity
+{
+    public required decimal TotalAmount { get; set; }
+    public required string Status { get; set; } = "Pending"; // Pending, Processing, Completed, Cancelled
+    public required string Address { get; set; }
+    
+    public Guid UserId { get; set; }
+    public User User { get; set; }
+    
+    public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\OrderDetail.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class OrderDetail: BaseEntity<Guid>, IAuditableEntity
+{
+    public Guid OrderId { get; set; }
+    public Order Order { get; set; }
+    
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }//gi· ti?n t?i th?i di?m mua
+    
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Product.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Product: BaseEntity<Guid>, IAuditableEntity
+{
+    public required string Name { get; set; }
+    public required string Description { get; set; }
+    public string? UrlImage { get; set; }
+    public decimal Price { get; set; }
+    
+    public Guid SellerId { get; set; }
+    public Seller Seller { get; set; }
+    
+    public Inventory Inventory { get; set; }
+    
+    public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    public ICollection<CartDetail> CartDetails { get; set; } = new List<CartDetail>();
+    public ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+    public ICollection<ProductStorage> ProductStorages { get; set; } = new List<ProductStorage>();
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\ProductCategory.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class ProductCategory: BaseEntity<Guid>, IAuditableEntity
+{
+    public Guid CategoryId { get; set; }
+    public Category Category { get; set; }
+    
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+        
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\ProductStorage.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class ProductStorage: BaseEntity<Guid>, IAuditableEntity
+{
+    public Guid ProductId { get; set; }
+    public Product Product { get; set; }
+    
+    public Guid StorageId { get; set; }
+    public Storage Storage { get; set; }
+    
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Seller.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Seller: BaseEntity<Guid>, IAuditableEntity
+{
+    public required string TaxCode { get; set; }
+    public required string CompanyName { get; set; }
+    public required string CompanyAddress { get; set; }
+    
+    public Guid UserId { get; set; }//1 user cÛ th l‡ 1 seller
+    public User User { get; set; }// d? ORM bi?t cÛ m?i quan h? v?i nhau, sau xu?ng DB
+
+    public ICollection<Product> Products { get; set; } = new List<Product>();
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\Storage.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class Storage: BaseEntity<Guid>, IAuditableEntity
+{
+    public decimal Price { get; set; }
+    public required string Type { get; set; }
+    
+    public ICollection<ProductStorage> ProductStorages { get; set; } = new List<ProductStorage>();    
+    public DateTimeOffset CreateAt { get; set; }
+    public DateTimeOffset? UpdateAt { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Repository\Entity\User.cs
+================================================
+
+using TetPee.Repository.Abtraction;
+
+namespace TetPee.Repository.Entity;
+
+public class User: BaseEntity<Guid>, IAuditableEntity
+{
+    public required string Email { get; set; }
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
+    public string? ImageUrl { get; set; } = null;
+    public string? PhoneNumber { get; set; } = null;
+    public required string HashedPassword { get; set; }
+    
+    public string? Address { get; set; }
+    public string Role { get; set; } = "User";// User, Seller, Admin
+    public bool IsVerified { get; set; } = false;// khi user register, thÏ ph?i verify email h?p l?
+    public int VerifiedCode { get; set; }// M„ verify g?i v? email
+    public string? DateOfBirth { get; set; } = null;
+    
+    
+    public Seller? Seller { get; set; }
+    public Cart? Cart { get; set; } 
+    public ICollection<Order> Orders { get; set; } = new List<Order>();// 1 user cÛ 1 m?ng order
+    public DateTimeOffset CreateAt { get; set; }// dÚng d? li?u n‡y du?c r?o ra khi n‡o
+    public DateTimeOffset? UpdateAt { get; set; }// dÚng d? li?u n‡y du?c c?p nh?t l?n cu?i khi n‡o
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Class1.cs
+================================================
+
+namespace TetPee.Service;
+
+public class Class1
+{
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\TetPee.Service.csproj
+================================================
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\TetPee.Repository\TetPee.Repository.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CloudinaryDotNet" Version="1.28.0"/>
+        <PackageReference Include="MailKit" Version="4.15.1" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.1" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.16.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9"/>
+    </ItemGroup>
+
+</Project>
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Base\Response.cs
+================================================
+
+namespace TetPee.Service.Base;
+
+public class Response
+{
+    public class PageResult<T>
+    {
+        public List<T> Items { get; set; } = new List<T>();
+        public int Totalitems { get; set; }
+        public int PageIndex { get; set; }
+        public int PageSize { get; set; }
+    }
+} 
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Cart\IService.cs
+================================================
+
+namespace TetPee.Service.Cart;
+
+public interface IService
+{
+    public Task CreateCart();
+    
+    public Task AddProductToCart(Request.AddProductToCartRequest request);
+    
+    public Task RemoveProductFromCart(Request.RemoveProductFromCartRequest request);
+    
+    public Task<List<Response.ProductResponse>> GetCart();
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Cart\Request.cs
+================================================
+
+namespace TetPee.Service.Cart;
+
+public class Request
+{
+    public class AddProductToCartRequest
+    {
+        public Guid ProductId { get; set; }
+        public int Quantity { get; set; }
+    }
+        
+    public class RemoveProductFromCartRequest
+    {
+        public Guid ProductId { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Cart\Response.cs
+================================================
+
+namespace TetPee.Service.Cart;
+
+public class Response
+{
+    public class ProductResponse()
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Url { get; set; }
+        public decimal Price { get; set; }
+        public int Quantity { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Cart\Service.cs
+================================================
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using TetPee.Repository.Data;
+using TetPee.Repository.Entity;
+
+namespace TetPee.Service.Cart;
+
+public class Service: IService
+{
+    private readonly AppDbContext _dbContext;
+    private readonly IHttpContextAccessor _httpContext;
+
+    public Service(AppDbContext dbContext, IHttpContextAccessor httpContext)
+    {
+        _dbContext = dbContext;
+        _httpContext = httpContext;
+    }
+
+    public async Task CreateCart()
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x=> x.Type == "UserId")?.Value;
+        
+        var userIdGuid = Guid.Parse(userId!);
+
+        var query = _dbContext.Carts.Where(x=> x.UserId == userIdGuid);
+        
+        var isExist = await query.AnyAsync();
+        if (isExist)
+        {
+            throw new Exception("Cart already exist");
+        }
+        var cart = new Repository.Entity.Cart()
+        {
+            UserId = userIdGuid
+        };
+        _dbContext.Carts.Add(cart);
+        await _dbContext.SaveChangesAsync();
+
+    }
+
+    public async Task AddProductToCart(Request.AddProductToCartRequest request)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x=> x.Type == "UserId")?.Value;
+        
+        var userIdGuid = Guid.Parse(userId!);
+
+        var query = _dbContext.Carts.Where(x=> x.UserId == userIdGuid);
+        
+        var cart = await query.FirstOrDefaultAsync();
+        if (cart == null)
+        {
+            // throw new Exception("Cart not exists");
+            cart = new Repository.Entity.Cart()
+            {
+                Id = Guid.NewGuid(),
+                UserId = userIdGuid
+            };
+            _dbContext.Add(cart);
+            await _dbContext.SaveChangesAsync();
+        }
+        
+        var productQuery = _dbContext.CartDetails.Where(x=> x.CartId == cart.Id && x.ProductId == request.ProductId);
+        
+        var cartExist = await productQuery.FirstOrDefaultAsync();
+        
+        if (cartExist != null)
+        {
+            cartExist.Quantity += request.Quantity;
+            _dbContext.Update(cartExist);
+            await _dbContext.SaveChangesAsync();
+            return;
+        }
+        
+        var cartDetail = new CartDetail()
+        {
+            CartId = cart.Id,
+            ProductId = request.ProductId,
+            Quantity = request.Quantity
+        };
+            _dbContext.Add(cartDetail);
+          await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task RemoveProductFromCart(Request.RemoveProductFromCartRequest request)
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x=> x.Type == "UserId")?.Value;
+        
+        var userIdGuid = Guid.Parse(userId!);
+
+        var query = _dbContext.CartDetails.Where(x => x.Cart.UserId == userIdGuid && x.ProductId == request.ProductId);
+            
+        var cartDetail = await query.FirstOrDefaultAsync();
+
+        if (cartDetail == null)
+        {
+            throw new Exception("Product not exist in cart");
+        }
+        _dbContext.Remove(cartDetail);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task<List<Response.ProductResponse>> GetCart()
+    {
+        var userId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x=> x.Type == "UserId")?.Value;
+        
+        var userIdGuid = Guid.Parse(userId!);
+
+        var query = _dbContext.CartDetails.Where(x => true);
+
+        var selectedQuery = query.Select(x => new Response.ProductResponse()
+        {
+            Name = x.Product.Name,
+            Description = x.Product.Description,
+            Price = x.Product.Price,
+            Quantity = x.Quantity,
+
+        });
+        var listResult = await selectedQuery.ToListAsync();
+        return listResult;
+
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Category\IService.cs
+================================================
+
+namespace TetPee.Service.Category;
+
+public interface IService
+{
+    public Task<List<Response.CategoryResponse>> GetCategory();
+    public Task<List<Response.CategoryResponse>> GetChildrenByCategory(Guid parentId);
+
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Category\Response.cs
+================================================
+
+namespace TetPee.Service.Category;
+
+public class Response
+{
+    public class CategoryResponse
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public Guid? ParentId { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Category\Service.cs
+================================================
+
+using Microsoft.EntityFrameworkCore;
+using TetPee.Repository.Data;
+
+namespace TetPee.Service.Category;
+
+public class Service: IService
+{
+    private readonly AppDbContext _dbContext;
+    
+    public Service(AppDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+    public async Task<List<Response.CategoryResponse>> GetCategory()
+    {
+        var query = _dbContext.Categories.Where(x => true);
+        
+        
+        query = query.OrderBy(x => x.Name);
+        var selecctedQuery = query
+            .Select(x => new Response.CategoryResponse()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                ParentId = x.ParentId
+            });
+        var listResult =  await selecctedQuery.ToListAsync();
+        return listResult;
+    }
+
+    public async Task<List<Response.CategoryResponse>> GetChildrenByCategory(Guid parentId)
+    {
+        var query = _dbContext.Categories.Where(x => x.ParentId == parentId);
+        
+        
+        query = query.OrderBy(x => x.Name);
+        var selecctedQuery = query
+            .Select(x => new Response.CategoryResponse()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                ParentId = x.ParentId
+            });
+        var listResult =  await selecctedQuery.ToListAsync();
+        return listResult;
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\CloudinaryService\CloudinaryOptions.cs
+================================================
+
+using System.ComponentModel.DataAnnotations;
+
+namespace TetPee.Service.CloudinaryService;
+
+public record CloudinaryOptions
+{
+    [Required]public string CloudName { get; set; }
+    [Required]public string ApiKey { get; set; }
+    [Required]public string ApiSecret { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\CloudinaryService\Service.cs
+================================================
+
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using TetPee.Service.MediaService;
+
+namespace TetPee.Service.CloudinaryService;
+
+public class Service:IService
+{
+    private readonly Cloudinary _cloudinary;
+    private readonly CloudinaryOptions _cloudinaryOptions = new();
+
+    public Service(IConfiguration configuration)
+    {
+        configuration.GetSection(nameof(CloudinaryOptions)).Bind(_cloudinaryOptions);
+        _cloudinary = new Cloudinary(new Account(
+            _cloudinaryOptions.CloudName,
+            _cloudinaryOptions.ApiKey,
+            _cloudinaryOptions.ApiSecret));
+    }
+
+    public async Task<string> UploadImageAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            throw new ArgumentException("File is empty or null.", nameof(file));
+        }
+        if (!IsImageFile(file))
+        {
+            throw new ArgumentException("File is not a valid image.", nameof(file));
+        }
+        
+        await using var stream = file.OpenReadStream();
+        var uploadParams = new ImageUploadParams()
+        {
+            File = new FileDescription(file.FileName, stream)
+        };
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+        return uploadResult.SecureUrl.ToString();
+    }
+    
+    private bool IsImageFile(IFormFile file)
+    {
+        // This is a basic check. For more robust validation, consider using a library like MimeDetective
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif",".webp" };
+        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        return allowedExtensions.Contains(fileExtension);
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Identity\IService.cs
+================================================
+
+namespace TetPee.Service.Identity;
+
+public interface IService
+{
+    public Task<Response.IdenetityResponse> Login(String email, String password);
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Identity\Request.cs
+================================================
+
+namespace TetPee.Service.Identity;
+
+public class Request
+{
+    public class CreateUserRequest
+    {
+        public required string Email { get; set; }
+        public required string Password { get; set; }
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Identity\Response.cs
+================================================
+
+namespace TetPee.Service.Identity;
+
+public class Response
+{
+    public class IdenetityResponse
+    {
+        public string? AccessToken { get; set; } = null;
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Identity\Service.cs
+================================================
+
+using System.Security.Claims;
+using CloudinaryDotNet.Actions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using TetPee.Repository.Data;
+using TetPee.Service.JwtService;
+
+namespace TetPee.Service.Identity;
+
+public class Service: IService
+{
+    private readonly AppDbContext _dbContext;
+    private readonly JwtService.IJwtService _jwtService;
+    private readonly JwtOptions _jwtOption = new();
+    
+
+    public Service(IConfiguration configuration,AppDbContext dbContext,  JwtService.IJwtService jwtService)
+    {
+        _dbContext = dbContext;
+        _jwtService = jwtService;
+        configuration.GetSection(nameof(JwtOptions)).Bind(_jwtOption);
+    }
+
+    public async Task<Response.IdenetityResponse> Login(string email, string password)
+    {
+        var user = await _dbContext.Users
+            .Include(x => x.Seller)
+            .FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null)
+        {
+            throw new Exception("User not found");
+        }
+
+        if (user.HashedPassword != password)
+        {
+            throw new Exception("Invalid password");
+        }
+        //User n‡y ch?c ch?n l‡ tÙi
+        var claims = new List<Claim>
+        {
+            new Claim("UserId", user.Id.ToString()),
+            new Claim("Email", user.Email),
+            new Claim("Role", user.Role),
+            new Claim(ClaimTypes.Role, user.Role),
+            // Ph?i cÛ claim n‡y d? ph‚n quy?n cho c·c API endpoint, n?u thi?u claim n‡y thÏ khÙng ph‚n quy?n du?c
+            new Claim(ClaimTypes.Expiration, 
+                DateTimeOffset.UtcNow.AddMinutes(_jwtOption.ExpireMinutes).ToString()),
+        };
+
+        if (user.Role == "Seller")
+        {
+            // var seller = await  _dbContext.Sellers.FirstOrDefaultAsync(u => u.UserId == user.Id);
+            // if (seller != null)
+            // {
+            //     claims.Add(new Claim("SellerId", seller.Id.ToString()));
+            // }
+            claims.Add(new Claim("SellerId", user.Seller!.Id.ToString()));
+        }
+        var token = _jwtService.GenerateAccessToken(claims);
+
+        var result = new Response.IdenetityResponse()
+        {
+            AccessToken = token
+        };
+        return result;
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\JwtService\IJwtService.cs
+================================================
+
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+
+namespace TetPee.Service.JwtService;
+
+public interface IJwtService
+{
+    public string GenerateAccessToken(IEnumerable<Claim> claims);
+    ClaimsPrincipal ValidateToken(string token);
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\JwtService\JwtOption.cs
+================================================
+
+using System.ComponentModel.DataAnnotations;
+
+namespace TetPee.Service.JwtService;
+
+public class JwtOptions
+{
+    [Required]public string Issuer { get; set; }
+    [Required]public string Audience { get; set; }
+    [Required]public string SecretKey { get; set; }
+    [Required]public double ExpireMinutes { get; set; }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\JwtService\JwtServices.cs
+================================================
+
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+
+namespace TetPee.Service.JwtService;
+
+public class JwtServices: IJwtService
+{
+    
+    private readonly JwtOptions _jwtOption = new();
+
+    public JwtServices(IConfiguration configuration)
+    {
+        configuration.GetSection(nameof(JwtOptions)).Bind(_jwtOption);
+        // ¡nh x? d? li?u t? AppSettings v‡o Object JwtOptions
+    }
+    
+    public string GenerateAccessToken(IEnumerable<Claim> claims)
+    {
+        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOption.SecretKey));
+        //t?o 1 key d? m„ hÛa token, s? d?ng secretkey t? JwtOptions
+        var signingCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+        //T?o 1 d?i tu?ng SigningCredentials d? x·c d?nh thu?t to·n m„ hÛa v‡ key s? d?ng d? k˝ tokem
+        var tokenOptions = new JwtSecurityToken(
+            issuer: _jwtOption.Issuer,//C·i token n‡y du?c kÌ - t?o ra b?i ai, t? ch?c n‡o
+            audience: _jwtOption.Audience,// C·i token n‡y d‡nh cho ai, t? ch?c n‡o
+            claims: claims,// Nh?ng thÙng tin m‡ b?n mu?n luu tr? trong token
+            // thu?ng l‡ thÙng tin v? ngu?i d˘ng nhu ID, email, vai trÚ, v.v.
+            //n?m trong payload
+            expires: DateTime.Now.AddMinutes(_jwtOption.ExpireMinutes),
+            signingCredentials: signingCredentials
+            );
+        
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+        //sau dÛ g?i  JwtSecurityTokenHandler
+            //
+        return tokenString;
+    }
+
+    public ClaimsPrincipal ValidateToken(string token)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\MailService\IService.cs
+================================================
+
+using System.Net.Mail;
+
+namespace TetPee.Service.MailService;
+
+public interface IService
+{
+    public Task SendMail(MailContent mailContent);
+}
+
+public class MailContent
+{
+    public required string To { get; set; } //–i?a chi? gu?i dÍ¥n
+    public required string Subject { get; set; } //Chu? dÍ` (tiÍu dÍ email)
+    public required string Body { get; set; } //NÙ?i dung (hÙ~ tro? HTML) cu?a email
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\MailService\MailOption.cs
+================================================
+
+using System.ComponentModel.DataAnnotations;
+
+namespace TetPee.Service.MailService;
+
+public class MailOptions
+{
+    [Required] public string Mail { get; set; }
+    [Required] public string DisplayName { get; set; }
+    [Required] public string Password { get; set; }
+    [Required] public string Host { get; set; }
+    [Required] public int Port { get; set; }
+    
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\MailService\Service.cs
+================================================
+
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.Extensions.Configuration;
+using MimeKit;
+
+namespace TetPee.Service.MailService;
+
+public class Service : IService
+{
+    private readonly MailOptions _mailOptions = new();
+
+    public Service(IConfiguration configuration)
+    {
+        configuration.GetSection(nameof(MailOptions)).Bind(_mailOptions);
+    }
+    
+    public async Task SendMail(MailContent mailContent)
+    {
+        MimeMessage email = new();
+        email.Sender = new MailboxAddress(_mailOptions?.DisplayName, _mailOptions!.Mail);
+        email.From.Add(new MailboxAddress(_mailOptions?.DisplayName, _mailOptions!.Mail));
+        email.To.Add(MailboxAddress.Parse(mailContent.To));
+        email.Subject = mailContent.Subject;
+
+
+        BodyBuilder builder = new();
+        builder.HtmlBody = mailContent.Body;
+        email.Body = builder.ToMessageBody();
+
+        // d˘ng SmtpClient c?a MailKit
+        using SmtpClient smtp = new();
+
+        await smtp.ConnectAsync(_mailOptions?.Host, _mailOptions!.Port, SecureSocketOptions.StartTls);
+        await smtp.AuthenticateAsync(_mailOptions.Mail, _mailOptions.Password);
+        await smtp.SendAsync(email);
+
+        await smtp.DisconnectAsync(true);
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\MediaService\IService.cs
+================================================
+
+using Microsoft.AspNetCore.Http;
+
+namespace TetPee.Service.MediaService;
+
+public interface IService
+{
+    public Task<string> UploadImageAsync(IFormFile file);
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Model\ApiResponse.cs
+================================================
+
+namespace TetPee.Service.Model;
+
+public class ApiResponse
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = null!;
+    public object? Data { get; set; }
+    public object? Errors { get; set; }
+    public string? TraceId { get; set; }
+    public DateTime TimestampUtc { get; set; }
+}
+
+public static class ApiResponseFactory
+{
+    public static ApiResponse SuccessResponse(object? data, string message = "Request processed successfully",
+        string? traceId = null)
+    {
+        return new ApiResponse
+        {
+            Success = true,
+            Message = message,
+            Data = data,
+            TraceId = traceId,
+            TimestampUtc = DateTime.UtcNow
+        };
+    }
+
+    public static ApiResponse ErrorResponse(string message, object? errors = null,
+        string? traceId = null)
+    {
+        return new ApiResponse
+        {
+            Success = false,
+            Message = message,
+            Errors = errors,
+            TraceId = traceId,
+            TimestampUtc = DateTime.UtcNow
+        };
+    }
+}
+
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Product\IService.cs
+================================================
+
+namespace TetPee.Service.Product;
+
+public interface IService
+{
+    Task<string>CreateProduct(Request.CreateProductRequest request);
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Product\Request.cs
+================================================
+
+namespace TetPee.Service.Product;
+
+public class Request
+{
+    public class CreateProductRequest
+    {
+        public required string Name { get; set; }
+        public required string Description { get; set; }
+        public required decimal Price { get; set; }
+        // public required Guid SellerId { get; set; }
+        public List<Guid>? CategoryIds { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Product\Service.cs
+================================================
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using TetPee.Repository.Data;
+using TetPee.Repository.Entity;
+
+namespace TetPee.Service.Product;
+
+public class Service:IService
+{
+    private readonly AppDbContext _dbContext;
+    private readonly IHttpContextAccessor _httpContext;//l‚¥y duo?c ca¥c claims trong token
+    
+    public Service(AppDbContext dbContext,  IHttpContextAccessor httpContext)
+    {
+        _dbContext = dbContext;
+        _httpContext = httpContext;
+    }
+    public async Task<string> CreateProduct(Request.CreateProductRequest request)
+    {
+        var sellerId = _httpContext.HttpContext.User.Claims.FirstOrDefault(x=> x.Type == "SellerId")?.Value;
+        var sellerIdGuid = Guid.Parse(sellerId!);
+        
+        var existingProductQuery =
+            _dbContext.Products.Where(x => x.Name.ToLower().Trim() == request.Name.ToLower().Trim());
+
+        bool isExistProducct = await existingProductQuery.AnyAsync();// AnyAsync tra? ra yes/no
+        
+        if (isExistProducct)
+            throw new Exception("Product with the same name already exists");
+
+        var existingSellerQuery = _dbContext.Sellers.Where(x => x.Id == sellerIdGuid);
+        
+        bool isExistSeller = await existingSellerQuery.AnyAsync();
+
+        if (!isExistSeller)
+        {
+            throw new Exception("Seller not exist");
+        }
+
+        var product = new Repository.Entity.Product
+        {
+            Name = request.Name,
+            Description = request.Description,
+            Price = request.Price,
+            SellerId = sellerIdGuid
+        };
+        _dbContext.Products.Add(product);
+        var sellerResult = await _dbContext.SaveChangesAsync();
+
+        if (request.CategoryIds != null && request.CategoryIds.Count > 0)
+        {
+            var productCateList = request.CategoryIds.Select(id => new ProductCategory()
+            {
+                CategoryId = id,
+                ProductId = product.Id
+            });
+            
+            //Same with above but using foreach loop
+            // var productCateList1 = new List<ProductCategory>();
+            // foreach (var id in request.CategoryIds)
+            // {
+            //     var productCategory = new ProductCategory()
+            //     {
+            //         CategoryId = id,
+            //         ProductId = product.Id
+            //     };
+            //     productCateList1.Add(productCategory);
+            // }
+            
+            _dbContext.AddRange(productCateList);
+            await _dbContext.SaveChangesAsync();
+        }
+        if(sellerResult > 0) return "Add Product successfully";
+        return "Add Product failed";
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Seller\IService.cs
+================================================
+
+namespace TetPee.Service.Seller;
+
+public interface IService
+{
+    public Task<Base.Response.PageResult<Response.GetSellerResponse>> GetSellers(
+        string? searchTerm,
+        int pageSize,
+        int pageIndex);
+
+    public Task<Response.GetSellerByIdResponse?> GetSellerById(Guid id);
+
+    public Task<string> CreateSeller(Request.CreateSellerRequest request);
+
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Seller\Request.cs
+================================================
+
+namespace TetPee.Service.Seller;
+
+public class Request
+{
+    public class CreateSellerRequest : Identity.Request.CreateUserRequest
+    {
+        public required string CompanyName { get; set; }
+        public required string CompanyAddress { get; set; }
+        public required string TaxCode { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Seller\Response.cs
+================================================
+
+namespace TetPee.Service.Seller;
+
+public class Response
+{
+    public class GetSellerResponse: User.Response.GetALlUserResponse
+    {
+        public string? CompanyName { get; set; }
+        public string? TaxCode { get; set; }
+    }
+
+    public class GetSellerByIdResponse : User.Response.GetUserResponse
+    {
+        public string? CompanyName { get; set; }
+        public string? CompanyAdress { get; set; }
+        public string? TaxCode { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\Seller\Service.cs
+================================================
+
+using Microsoft.EntityFrameworkCore;
+using TetPee.Repository.Data;
+using TetPee.Service.MailService;
+
+namespace TetPee.Service.Seller;
+
+public class Service : IService
+{
+    private readonly AppDbContext _dbContext;
+    private readonly MailService.IService _mailService;
+
+    public Service(AppDbContext dbContext,  MailService.IService mailService)
+    {
+        _dbContext = dbContext;
+        _mailService = mailService;
+    }
+
+    public async Task<Base.Response.PageResult<Response.GetSellerResponse>> GetSellers(string? searchTerm, int pageSize, int pageIndex)
+    {
+        var query = _dbContext.Sellers.Where(x => true);
+        if (searchTerm != null)
+        {
+            query = query.Where(x =>
+                x.User.FirstName.Contains(searchTerm) ||
+                x.User.LastName.Contains(searchTerm) ||
+                x.User.Email.Contains(searchTerm));
+        }
+        
+        query = query.OrderBy(x => x.User.Email);
+        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+        var selecctedQuery = query
+            .Select(x => new Response.GetSellerResponse()
+            {
+                Id = x.User.Id,// ch? n‡y ph?i gi?ng User.Id ? du?i
+                Email = x.User.Email,
+                FirstName = x.User.FirstName,
+                LastName = x.User.LastName,
+                ImageUrl = x.User.ImageUrl,
+                role = x.User.Role,
+                CompanyName = x.CompanyName,
+                TaxCode = x.TaxCode
+            });
+        // var query = _dbContext.Users.Where(x => x.Role == "Seller");
+        // // T?c d? b? ch?m d? vÏ cÛ nhi?u role
+        //
+        // if(searchTerm != null)
+        // {
+        //     query = query.Where(x => 
+        //         x.FirstName.Contains(searchTerm) ||
+        //         x.LastName.Contains(searchTerm) ||
+        //         x.Email.Contains(searchTerm));
+        // }
+        //
+        // query = query.OrderBy(x => x.Email);
+        //
+        // query = query
+        //     .Skip((pageIndex - 1) * pageSize)
+        //     .Take(pageSize);
+        //
+        // var selectedQuery = query
+        //     .Select(x => new Response.GetSellersResponse()
+        //     {
+        //         Id = x.Id,
+        //         Email = x.Email,
+        //         FirstName = x.FirstName,
+        //         LastName = x.LastName,
+        //         ImageUrl = x.ImageUrl,
+        //         Role = x.Role,
+        //         CompanyName = x.Seller!.CompanyName,
+        //         TaxCode = x.Seller.TaxCode
+        //     });
+
+        var listResult =  await selecctedQuery.ToListAsync();
+        var totalItems = listResult.Count;
+
+        var result = new Base.Response.PageResult<Response.GetSellerResponse>()
+        {
+            Items = listResult,
+            PageIndex = pageIndex,
+            PageSize = pageSize,
+            Totalitems = totalItems,
+        };
+        return result;
+    }
+
+    public async Task<Response.GetSellerByIdResponse?> GetSellerById(Guid id)
+    {
+        var query = _dbContext.Sellers.Where(x => x.User.Id == id);// User.Id ph?i gi?ng User.Id ? trÍn
+        
+        query = query.OrderBy(x => x.User.Email);
+       
+        var selecctedQuery = query
+            .Select(x => new Response.GetSellerByIdResponse()
+            {
+                Id = x.Id,
+                Email = x.User.Email,
+                FirstName = x.User.FirstName,
+                LastName = x.User.LastName,
+                ImageUrl = x.User.ImageUrl,
+                role = x.User.Role,
+                CompanyName = x.CompanyName,
+                TaxCode = x.TaxCode,
+                PhoneNumber = x.User.PhoneNumber,
+                Address = x.User.Address,
+                CompanyAdress = x.CompanyName,
+                DateOfBirth = x.User.DateOfBirth
+            });
+        var result = await selecctedQuery.FirstOrDefaultAsync();
+        return result;
+    }
+
+    public async Task<string> CreateSeller(Request.CreateSellerRequest request)
+    {
+        var existingUser = _dbContext.Users.FirstOrDefault(x => x.Email == request.Email);
+        
+        if(existingUser != null)
+        {
+            throw new Exception("Email already exists");
+        }
+        
+        var user = new Repository.Entity.User()
+        {
+            Email = request.Email,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            HashedPassword = request.Password,
+            Role = "Seller"
+        };
+
+        _dbContext.Add(user);
+
+        var result = await _dbContext.SaveChangesAsync();
+        
+        if (result > 0)
+        {
+            var seller = new Repository.Entity.Seller()
+            {
+                CompanyAddress = request.CompanyAddress,
+                CompanyName = request.CompanyName,
+                TaxCode = request.TaxCode,
+                UserId = user.Id,
+            };
+            
+            _dbContext.Add(seller);
+            
+            var sellerResult = await _dbContext.SaveChangesAsync();
+
+            await _mailService.SendMail(new MailContent()
+{
+    To = request.Email,
+    Subject = "Welcome to TetPee",
+    Body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+</head>
+<body style='margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f6f8;'>
+    <table width='100%' cellpadding='0' cellspacing='0'>
+        <tr>
+            <td align='center'>
+                <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.1);'>
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style='background: linear-gradient(90deg, #ff7e5f, #feb47b); padding:20px; text-align:center; color:white;'>
+                            <h1 style='margin:0;'>Welcome to TetPee ??</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style='padding:30px; color:#333; line-height:1.6;'>
+                            <h2 style='margin-top:0;'>Dear {request.FirstName} {request.LastName},</h2>
+
+                            <p>
+                                Thank you for registering as a <b>seller</b> on <b>TetPee</b>.
+                                We are excited to have you on board and look forward to a successful partnership.
+                            </p>
+
+                            <p>
+                                With TetPee, you can easily manage your products, reach more customers,
+                                and grow your business efficiently.
+                            </p>
+
+                            <!-- Button -->
+                            <div style='text-align:center; margin:30px 0;'>
+                                <a href='#' 
+                                   style='background:#ff7e5f; color:white; padding:12px 25px; text-decoration:none; border-radius:25px; display:inline-block; font-weight:bold;'>
+                                    Start Selling Now
+                                </a>
+                            </div>
+
+                            <p>
+                                If you have any questions, feel free to contact our support team anytime.
+                            </p>
+
+                            <p>
+                                Best regards,<br/>
+                                <b>The TetPee Team</b>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style='background:#f4f6f8; padding:15px; text-align:center; font-size:12px; color:#888;'>
+                            © 2026 TetPee. All rights reserved.
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"
+});
+
+            if (sellerResult > 0) return "Add Seller successfully";
+            
+            return "Add Seller fail";
+        }
+        
+        return "Add Seller fail";
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\User\IService.cs
+================================================
+
+namespace TetPee.Service.User;
+
+public interface IService
+{
+    public Task<Base.Response.PageResult<Response.GetUserResponse>> GetUsers(
+        string? searchTerm,
+        int pageSize,
+        int pageIndex);
+    
+    public Task<Response.GetUserResponse?> GetUserById(Guid id);
+    
+    public Task<bool>UpdateUser(Guid id, Request.UpdateUserRequest request);
+    public Task<bool>DeleleUser(Guid id);
+    public Task<string>CreateUser(Request.CreateUserRequest request);
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\User\Request.cs
+================================================
+
+using Microsoft.AspNetCore.Http;
+
+namespace TetPee.Service.User;
+
+public class Request
+{
+    public class CreateUserRequest
+    {
+        public required string Email { get; set; }
+        
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string Password { get; set; }
+        public IFormFile? Avatar { get; set; }
+    }
+
+    public class UpdateUserRequest : CreateUserRequest
+    {
+        public Guid Id { get; set; }
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\User\Response.cs
+================================================
+
+namespace TetPee.Service.User;
+
+public class Response
+{
+    //api d?nh nghia controller
+    //response thÏ d? cho service
+    //h‡m n‡y d? tr? ra cho frontend
+    public class GetUserResponse
+    {
+        public Guid Id { get; set; }
+        public string Email { get; set; } = null;
+        public string FirstName { get; set; } = null;
+        public string LastName { get; set; } = null;
+        public string? ImageUrl { get; set; } = null;
+        public string? PhoneNumber { get; set; } = null;
+        public string? Address { get; set; }
+        public string role { get; set; } = "User";
+        public string? DateOfBirth { get; set; } = null;
+    }
+    
+    public class GetALlUserResponse
+    {
+        public Guid Id { get; set; }
+        public string Email { get; set; } = null;
+        public string FirstName { get; set; } = null;
+        public string LastName { get; set; } = null;
+        public string? ImageUrl { get; set; } = null;
+        public string role { get; set; } = "User";
+    }
+}
+
+
+================================================
+FILE: D:\CSharp\TetPee-2\TetPee\TetPee.Service\User\Service.cs
+================================================
+
+using Microsoft.EntityFrameworkCore;
+using TetPee.Repository.Data;
+
+namespace TetPee.Service.User;
+
+public class Service:IService
+{
+    private readonly AppDbContext _dbContext;
+
+    public Service(AppDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<Base.Response.PageResult<Response.GetUserResponse>> GetUsers(string? searchTerm, int pageSize, int pageIndex)
+    {
+        var query = _dbContext.Users.Where(x => true);
+        if (searchTerm != null)
+        {
+            query = query.Where(x =>
+                x.FirstName.Contains(searchTerm) ||
+                x.LastName.Contains(searchTerm) ||
+                x.Email.Contains(searchTerm));
+        }
+        
+        query = query.OrderBy(x => x.Email);
+        query = query.Skip((pageIndex - 1) * pageSize).Take(pageSize);
+        var selecctedQuery = query
+            .Select(x => new Response.GetUserResponse()
+            {
+                Id = x.Id,
+                Email = x.Email,
+                FirstName = x.FirstName,
+                LastName = x.LastName,
+                ImageUrl = x.ImageUrl,
+                PhoneNumber = x.PhoneNumber,
+                Address = x.Address,
+                role = x.Role
+            });
+         var listResult =  await selecctedQuery.ToListAsync();
+         var totalItems = listResult.Count;
+
+         var result = new Base.Response.PageResult<Response.GetUserResponse>()
+         {
+             Items = listResult,
+             PageIndex = pageIndex,
+             PageSize = pageSize,
+             Totalitems = totalItems,
+         };
+         return result;
+    }
+    
+    public async Task<Response.GetUserResponse?> GetUserById(Guid id)
+    {
+        var query = _dbContext.Users.Where(x=> x.Id == id);
+
+        var selectedQuery = query
+            .Select(x => new Response.GetUserResponse()
+            {
+                Id = x.Id,
+                Email = x.Email,
+                FirstName = x.FirstName,
+                LastName = x.LastName,
+                ImageUrl = x.ImageUrl,
+                PhoneNumber = x.PhoneNumber,
+                Address = x.Address,
+                role = x.Role
+            });
+        var result = await selectedQuery.FirstOrDefaultAsync();
+        return result;
+    }
+
+    public async Task<bool> UpdateUser(Guid id, Request.UpdateUserRequest request)
+    {
+        var user = await _dbContext.Users.FindAsync(id);
+        if (user == null)
+        {
+            return false;
+        }
+
+        // user: L‡ d?i tu?ng cu m‡ b?n v?a lÙi t? du?i Database lÍn (?a d?y d? thÙng tin cu).
+        // request: L‡ thÙng tin m?i m‡ kh·ch h‡ng v?a g?i lÍn.
+        // D?u b?ng =: CÛ nghia l‡ "L?y gi· tr? m?i dË lÍn gi· tr? cu".
+        user.Email = request.Email;
+        user.FirstName = request.FirstName;
+        user.LastName = request.LastName;
+        user.HashedPassword = request.Password;
+        user.UpdateAt = DateTimeOffset.UtcNow;
+        
+        _dbContext.Users.Update(user);
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleleUser(Guid id)
+    {   
+        var user = await _dbContext.Users.FindAsync(id);
+        if (user == null)
+        {
+            return false;
+        }
+        _dbContext.Users.Remove(user);
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<string> CreateUser(Request.CreateUserRequest request)
+    {
+        var user = new Repository.Entity.User()
+        {
+            Email = request.Email,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            HashedPassword = request.Password,
+            CreateAt = DateTimeOffset.UtcNow,
+        };
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+        return "Create user successfully";
+    }
+}
